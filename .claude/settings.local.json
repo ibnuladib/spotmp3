@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(openssl req:*)",
+      "Bash(where ngrok:*)",
+      "Bash(npm list:*)",
+      "Bash(npx ngrok:*)",
+      "Bash(node server.js)",
+      "Bash(curl -s http://127.0.0.1:4040/api/tunnels)",
+      "Bash(where mkcert:*)",
+      "Bash(where choco:*)",
+      "Bash(where scoop:*)",
+      "Bash(choco install:*)",
+      "Bash(where cloudflared:*)",
+      "Bash(npx cloudflared:*)"
+    ]
+  }
+}

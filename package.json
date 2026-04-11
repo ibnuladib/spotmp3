@@ -1,0 +1,24 @@
+{
+  "name": "spotmp3",
+  "version": "1.0.0",
+  "description": "Download Spotify playlists as MP3 files",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "dotenv": "^17.4.1",
+    "express": "^5.2.1",
+    "ffmpeg-static": "^5.3.0",
+    "youtube-dl-exec": "^3.1.4",
+    "yt-dlp-wrap": "^2.3.12"
+  }
+}

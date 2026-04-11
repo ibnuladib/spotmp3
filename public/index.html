@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="SpotMP3 - Download Spotify playlists as MP3 files instantly" />
+  <title>SpotMP3 — Spotify Playlist Downloader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Animated background particles -->
+  <div class="bg-particles" id="bgParticles"></div>
+
+  <!-- Main App -->
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="22" fill="url(#grad1)" />
+            <path d="M15 20c6-2 14-2 20 1" stroke="#fff" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M17 25c5-1.5 11-1.5 16 0.5" stroke="#fff" stroke-width="2" stroke-linecap="round" />
+            <path d="M19 30c4-1 8-1 12 0.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" />
+            <defs>
+              <linearGradient id="grad1" x1="0" y1="0" x2="48" y2="48">
+                <stop offset="0%" stop-color="#1DB954" />
+                <stop offset="100%" stop-color="#14833B" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <h1>Spot<span>MP3</span></h1>
+          <p>Spotify Playlist Downloader</p>
+        </div>
+      </div>
+      <div class="header-status" id="headerStatus"></div>
+    </header>
+
+    <!-- Status Banner -->
+    <div class="status-banner" id="statusBanner" style="display:none;"></div>
+
+    <!-- Input Section -->
+    <section class="input-section" id="inputSection">
+      <div class="input-card glass-card">
+        <h2>Paste your Spotify link</h2>
+        <p class="subtitle">Supports playlists, albums, and individual tracks</p>
+        <div class="url-input-wrapper">
+          <div class="input-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            id="spotifyUrl"
+            placeholder="https://open.spotify.com/playlist/..."
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button class="btn-fetch" id="btnFetch" onclick="fetchPlaylist()">
+            <span class="btn-text">Fetch</span>
+            <div class="btn-loader" style="display:none;">
+              <div class="spinner"></div>
+            </div>
+          </button>
+        </div>
+        <div class="input-hints">
+          <span class="hint"><span class="hint-icon">🎵</span> Playlist</span>
+          <span class="hint"><span class="hint-icon">💿</span> Album</span>
+          <span class="hint"><span class="hint-icon">🎤</span> Track</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Playlist Info Section -->
+    <section class="playlist-section" id="playlistSection" style="display:none;">
+      <div class="playlist-header glass-card">
+        <div class="playlist-info">
+          <div class="playlist-cover" id="playlistCover"></div>
+          <div class="playlist-meta">
+            <h2 id="playlistName"></h2>
+            <p id="playlistCount"></p>
+          </div>
+        </div>
+        <div class="playlist-actions">
+          <button class="btn-download" id="btnDownload" onclick="startDownload()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7,10 12,15 17,10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            <span>Download All</span>
+          </button>
+          <button class="btn-secondary" id="btnNewSearch" onclick="resetApp()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <polyline points="1,4 1,10 7,10" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
+            <span>New Search</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="progress-section" id="progressSection" style="display:none;">
+        <div class="progress-info">
+          <span id="progressText">Preparing...</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress-bar-outer">
+          <div class="progress-bar-inner" id="progressBar" style="width: 0%;"></div>
+        </div>
+        <div class="progress-stats">
+          <span class="stat stat-done"><span class="stat-dot done"></span><span id="statDone">0</span> downloaded</span>
+          <span class="stat stat-fail"><span class="stat-dot fail"></span><span id="statFail">0</span> failed</span>
+          <span class="stat stat-total"><span class="stat-dot total"></span><span id="statTotal">0</span> total</span>
+        </div>
+      </div>
+
+      <!-- Completed Actions -->
+      <div class="completed-section" id="completedSection" style="display:none;">
+        <div class="completed-card glass-card">
+          <div class="completed-icon">
+            <svg viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="22" fill="url(#gradSuccess)" />
+              <path d="M15 24l6 6 12-12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+              <defs>
+                <linearGradient id="gradSuccess" x1="0" y1="0" x2="48" y2="48">
+                  <stop offset="0%" stop-color="#1DB954" />
+                  <stop offset="100%" stop-color="#0d9e3e" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <h3>Download Complete!</h3>
+          <p id="completedText"></p>
+          <button class="btn-download btn-zip" onclick="downloadZip()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7,10 12,15 17,10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            <span>Download ZIP</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Track List -->
+      <div class="track-list" id="trackList"></div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
