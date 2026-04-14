@@ -20,7 +20,11 @@
       "Bash(curl -s http://localhost:3000)",
       "Bash(pkill -f \"node server.js\")",
       "Bash(curl:*)",
-      "Bash(npm start:*)"
+      "Bash(npm start:*)",
+      "Bash(wrangler --version)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill:*)",
+      "Bash(wmic process:*)"
     ]
   }
 }

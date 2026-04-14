@@ -292,9 +292,43 @@ app.get("/auth/callback", async (req, res) => {
         tokenExpireTime = Date.now() + (response.data.expires_in * 1000) - 60000;
         console.log("✅ Spotify auth success — token received, scopes:", response.data.scope);
 
+        // Test the token immediately by fetching profile + playlists
+        let profileInfo = "";
+        try {
+            const [profileRes, playlistsRes] = await Promise.all([
+                axios.get('https://api.spotify.com/v1/me', {
+                    headers: { 'Authorization': `Bearer ${spotifyAccessToken}` }
+                }),
+                axios.get('https://api.spotify.com/v1/me/playlists', {
+                    headers: { 'Authorization': `Bearer ${spotifyAccessToken}` },
+                    params: { limit: 10 }
+                }),
+            ]);
+            const p = profileRes.data;
+            console.log("Profile:", JSON.stringify(p, null, 2));
+            console.log("Playlists raw:", JSON.stringify(playlistsRes.data, null, 2).slice(0, 2000));
+
+            const pls = playlistsRes.data.items || [];
+            profileInfo = `
+                <h3>Logged in as: ${p.display_name} (${p.id})</h3>
+                <h3>Your Playlists (${playlistsRes.data.total || pls.length} total):</h3>
+                <ul style="text-align:left; max-width:600px; margin:0 auto;">
+                ${pls.map(pl => {
+                    const trackCount = pl.tracks?.total ?? pl.track_count ?? '?';
+                    return `<li><strong>${pl.name || 'Unnamed'}</strong> (${trackCount} tracks, ${pl.public ? 'public' : 'private'})</li>`;
+                }).join('')}
+                </ul>
+            `;
+        } catch (testErr) {
+            console.error("API test error:", testErr.response?.status, JSON.stringify(testErr.response?.data));
+            profileInfo = `<p style="color:red;">API test failed: ${testErr.response?.status} — ${testErr.response?.data?.error?.message || testErr.message}</p>
+                <pre style="text-align:left; max-width:600px; margin:0 auto; font-size:12px;">${JSON.stringify(testErr.response?.data || { message: testErr.message }, null, 2)}</pre>`;
+        }
+
         res.send(`
             <h1 style="color: green;">✅ Successfully Authorized!</h1>
-            <p>You can now use SpotMP3 to download playlists.</p>
+            ${profileInfo}
+            <br>
             <a href="/" style="font-size: 18px; padding: 10px 20px; background: #1DB954; color: white; text-decoration: none; border-radius: 24px;">
                 Go to App
             </a>
@@ -310,11 +344,43 @@ app.get("/auth/callback", async (req, res) => {
 });
 
 // Check if tools are available
-app.get("/api/status", (req, res) => {
+app.get("/api/status", async (req, res) => {
+    let profile = null;
+    let playlists = null;
+    let apiError = null;
+
+    if (spotifyAccessToken) {
+        try {
+            const token = await getSpotifyToken();
+            const [profileRes, playlistsRes] = await Promise.all([
+                axios.get('https://api.spotify.com/v1/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }),
+                axios.get('https://api.spotify.com/v1/me/playlists', {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    params: { limit: 10 }
+                }),
+            ]);
+            profile = { id: profileRes.data.id, display_name: profileRes.data.display_name };
+            playlists = playlistsRes.data.items.map(p => ({
+                name: p.name,
+                id: p.id,
+                public: p.public,
+                tracks: p.tracks.total,
+                url: p.external_urls?.spotify || ""
+            }));
+        } catch (err) {
+            apiError = { status: err.response?.status, message: err.response?.data?.error?.message || err.message };
+        }
+    }
+
     res.json({
         spotifyAuthenticated: !!spotifyAccessToken,
         ytDlpAvailable: !!ytDlpPath && fs.existsSync(ytDlpPath),
         ffmpegAvailable: !!ffmpegPath,
+        profile,
+        playlists,
+        apiError,
     });
 });
 
