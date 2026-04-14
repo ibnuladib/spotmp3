@@ -12,7 +12,15 @@
       "Bash(where scoop:*)",
       "Bash(choco install:*)",
       "Bash(where cloudflared:*)",
-      "Bash(npx cloudflared:*)"
+      "Bash(npx cloudflared:*)",
+      "Bash(node:*)",
+      "Bash(cloudflared:*)",
+      "Bash(where npx:*)",
+      "Bash(npm install:*)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(pkill -f \"node server.js\")",
+      "Bash(curl:*)",
+      "Bash(npm start:*)"
     ]
   }
 }
