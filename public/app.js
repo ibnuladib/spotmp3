@@ -173,6 +173,7 @@ function renderTrackList(tracks) {
       <div class="track-status" id="track-status-${i}">
         <span class="waiting-icon">●</span>
       </div>
+      <div class="track-download" id="track-download-${i}" style="display:none;"></div>
     </div>
   `
         )
@@ -240,6 +241,7 @@ function updateTrackStatuses(results, errors) {
 
     trackData.forEach((t, i) => {
         const el = document.getElementById(`track-status-${i}`);
+        const dlEl = document.getElementById(`track-download-${i}`);
         if (!el) return;
 
         if (completedTitles.has(t.title)) {
@@ -248,6 +250,19 @@ function updateTrackStatuses(results, errors) {
           <polyline points="20,6 9,17 4,12" />
         </svg>
       </span>`;
+            if (dlEl) {
+                const result = results.find((r) => r.title === t.title);
+                if (result && result.filename) {
+                    dlEl.innerHTML = `<a href="/api/file/${currentSessionId}/${encodeURIComponent(result.filename)}" download>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7,10 12,15 17,10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                      </a>`;
+                    dlEl.style.display = "flex";
+                }
+            }
         } else if (failedTitles.has(`${t.artist} - ${t.title}`)) {
             el.innerHTML = `<span class="error-icon">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -286,10 +301,36 @@ function showCompleted(data) {
   `;
 }
 
-// ── Download ZIP ──────────────────────────────────────────────────────
-function downloadZip() {
-    if (!currentSessionId) return;
-    window.location.href = `/api/zip/${currentSessionId}`;
+// ── Download All Individually ─────────────────────────────────────────
+async function downloadAllIndividually() {
+    if (!currentSessionId || !trackData.length) return;
+
+    const btn = document.getElementById("btnDownloadAll");
+    const text = document.getElementById("downloadAllText");
+    btn.disabled = true;
+    text.textContent = "Downloading...";
+
+    // Small delay to let UI update
+    await new Promise(r => setTimeout(r, 100));
+
+    for (let i = 0; i < trackData.length; i++) {
+        const dlEl = document.getElementById(`track-download-${i}`);
+        const link = dlEl && dlEl.querySelector('a');
+        if (link) {
+            // Trigger download by clicking the link
+            const a = document.createElement('a');
+            a.href = link.href;
+            a.download = '';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            // Small delay between downloads
+            await new Promise(r => setTimeout(r, 500));
+        }
+    }
+
+    btn.disabled = false;
+    text.textContent = "Download All Individually";
 }
 
 // ── Reset App ─────────────────────────────────────────────────────────

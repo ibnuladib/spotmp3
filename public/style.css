@@ -715,35 +715,31 @@ body {
   animation: spin 0.7s linear infinite;
 }
 
-.track-item .track-download-btn {
+.track-download {
   flex-shrink: 0;
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.track-download a {
+  color: var(--green-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: all var(--transition);
+  opacity: 0.7;
+  transition: opacity var(--transition);
 }
 
-.track-item:hover .track-download-btn {
+.track-download a:hover {
   opacity: 1;
 }
 
-.track-download-btn:hover {
-  border-color: var(--green-primary);
-  color: var(--green-primary);
-  background: rgba(29, 185, 84, 0.08);
-}
-
-.track-download-btn svg {
-  width: 14px;
-  height: 14px;
+.track-download svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ── Responsive ────────────────────────────────────────────────────── */

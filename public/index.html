@@ -34,7 +34,7 @@
           </svg>
         </div>
         <div class="logo-text">
-          <h1>Spot<span>MP3</span></h1>
+          <h1>AdibSpot<span>MP3</span></h1>
           <p>Spotify Playlist Downloader</p>
         </div>
       </div>
@@ -140,13 +140,13 @@
           </div>
           <h3>Download Complete!</h3>
           <p id="completedText"></p>
-          <button class="btn-download btn-zip" onclick="downloadZip()">
+          <button class="btn-download btn-zip" id="btnDownloadAll" onclick="downloadAllIndividually()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7,10 12,15 17,10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            <span>Download ZIP</span>
+            <span id="downloadAllText">Download All Individually</span>
           </button>
         </div>
       </div>
