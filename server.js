@@ -8,7 +8,6 @@ const axios = require("axios");
 
 const app = express();
 const PORT = 3000;
-
 // ── Config ──────────────────────────────────────────────────────────────
 const DOWNLOAD_DIR = path.join(__dirname, "downloads");
 if (!fs.existsSync(DOWNLOAD_DIR)) fs.mkdirSync(DOWNLOAD_DIR, { recursive: true });
@@ -101,6 +100,7 @@ function extractSpotifyId(url) {
 }
 
 async function getPlaylistTracks(playlistUrl) {
+    let offset = 0;
     try {
         const parsed = extractSpotifyId(playlistUrl);
         if (!parsed || parsed.type !== "playlist") {
@@ -110,21 +110,32 @@ async function getPlaylistTracks(playlistUrl) {
         const token = await getSpotifyToken();
         const playlistId = parsed.id;
         const tracks = [];
-        let offset = 0;
+        
         let hasMore = true;
 
         while (hasMore) {
             const response = await axios.get(
-                `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+                `https://api.spotify.com/v1/playlists/${playlistId}/items`,
                 {
                     headers: { 'Authorization': `Bearer ${token}` },
-                    params: { offset, limit: 50, market: 'US' }
+                    params: { offset, limit: 50, additional_types: 'track'}
                 }
             );
+            
+            console.log("Offset",offset)
+            console.log(response.data);
+            for (const track of response.data.items) {
+                 console.log("Name :", JSON.stringify(track.item.name));
+            }
 
             const items = response.data.items || [];
             for (const item of items) {
                 const track = item.track;
+
+                if (!track) continue;
+                if (!track.name) continue;
+                if (track.is_local) continue;              
+                if (track.is_playable === false) continue; 
                 if (track && track.name) {
                     tracks.push({
                         title: track.name,
@@ -135,6 +146,7 @@ async function getPlaylistTracks(playlistUrl) {
                     });
                 }
             }
+            
 
             offset += items.length;
             hasMore = items.length === 50;
@@ -145,8 +157,13 @@ async function getPlaylistTracks(playlistUrl) {
         const status = error.response?.status;
         const data = error.response?.data;
         console.error("Error fetching playlist tracks:", status, JSON.stringify(data));
+        console.error("FULL ERROR:", error.response?.data);
+        console.log("offset", offset);
+        console.log("HEADERS:", error.response?.headers);
+        console.log("REQUEST:", error.request);
+        console.log("CONFIG:", error.config);
         if (status === 403) {
-            throw new Error("403 Forbidden — make sure your Spotify app is in development mode and your account is added as a test user in the developer dashboard: https://developer.spotify.com/dashboard");
+            throw new Error("403");
         }
         throw new Error(`Failed to fetch playlist: ${error.message}`);
     }
@@ -166,7 +183,7 @@ async function getTrackInfo(trackUrl) {
             `https://api.spotify.com/v1/tracks/${trackId}`,
             {
                 headers: { 'Authorization': `Bearer ${token}` },
-                params: { market: 'US' }
+                params: {}
             }
         );
 
@@ -309,14 +326,27 @@ app.get("/auth/callback", async (req, res) => {
             console.log("Playlists raw:", JSON.stringify(playlistsRes.data, null, 2).slice(0, 2000));
 
             const pls = playlistsRes.data.items || [];
+
             profileInfo = `
                 <h3>Logged in as: ${p.display_name} (${p.id})</h3>
                 <h3>Your Playlists (${playlistsRes.data.total || pls.length} total):</h3>
+
                 <ul style="text-align:left; max-width:600px; margin:0 auto;">
-                ${pls.map(pl => {
-                    const trackCount = pl.tracks?.total ?? pl.track_count ?? '?';
-                    return `<li><strong>${pl.name || 'Unnamed'}</strong> (${trackCount} tracks, ${pl.public ? 'public' : 'private'})</li>`;
-                }).join('')}
+                    ${pls.map(pl => {
+                        const trackCount = pl.tracks?.total ?? 0;
+
+                        const visibility =
+                            pl.public === true ? 'public' :
+                            pl.public === false ? 'private' :
+                            'unknown';
+
+                        return `
+                            <li>
+                                <strong>${pl.name || 'Unnamed'}</strong>
+                                (${trackCount} tracks, ${visibility})
+                            </li>
+                        `;
+                    }).join('')}
                 </ul>
             `;
         } catch (testErr) {
@@ -583,3 +613,6 @@ function start() {
 console.log("Calling start()");
 start();
 console.log("Start function completed");
+
+//ssh -i ~/.ssh/id_serveo -o StrictHostKeyChecking=no -R adibspotmp3:80:localhost:3000 serveo.net
+//npm start

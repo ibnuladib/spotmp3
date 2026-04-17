@@ -24,7 +24,10 @@
       "Bash(wrangler --version)",
       "Bash(netstat -ano)",
       "Bash(taskkill:*)",
-      "Bash(wmic process:*)"
+      "Bash(wmic process:*)",
+      "Bash(ssh *)",
+      "Bash(ssh-keygen *)",
+      "Bash(tasklist)"
     ]
   }
 }
