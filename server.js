@@ -122,21 +122,15 @@ async function getPlaylistTracks(playlistUrl) {
                 }
             );
             
-            console.log("Offset",offset)
-            console.log(response.data);
-            for (const track of response.data.items) {
-                 console.log("Name :", JSON.stringify(track.item.name));
-            }
-
             const items = response.data.items || [];
             for (const item of items) {
-                const track = item.track;
+                const track = item.item;
 
-                if (!track) continue;
+                if (!track || track.type !== "track") continue;
                 if (!track.name) continue;
-                if (track.is_local) continue;              
-                if (track.is_playable === false) continue; 
-                if (track && track.name) {
+                if (item.is_local) continue;
+                if (track.is_playable === false) continue;
+                if (track.name) {
                     tracks.push({
                         title: track.name,
                         artist: track.artists?.map(a => a.name).join(", ") || "Unknown",
@@ -146,7 +140,7 @@ async function getPlaylistTracks(playlistUrl) {
                     });
                 }
             }
-            
+
 
             offset += items.length;
             hasMore = items.length === 50;
@@ -158,10 +152,10 @@ async function getPlaylistTracks(playlistUrl) {
         const data = error.response?.data;
         console.error("Error fetching playlist tracks:", status, JSON.stringify(data));
         console.error("FULL ERROR:", error.response?.data);
-        console.log("offset", offset);
-        console.log("HEADERS:", error.response?.headers);
-        console.log("REQUEST:", error.request);
-        console.log("CONFIG:", error.config);
+        //console.log("offset", offset);
+        //console.log("HEADERS:", error.response?.headers);
+        //console.log("REQUEST:", error.request);
+        //console.log("CONFIG:", error.config);
         if (status === 403) {
             throw new Error("403");
         }
@@ -531,23 +525,58 @@ app.get("/api/progress/:sessionId", (req, res) => {
 });
 
 // Download all as ZIP
-app.get("/api/zip/:sessionId", (req, res) => {
+app.get("/api/zip/:sessionId", async (req, res) => {
     const session = sessions.get(req.params.sessionId);
     if (!session) return res.status(404).json({ error: "Session not found" });
 
+    console.log(`[ZIP] Creating zip for session ${req.params.sessionId}, ${session.results.length} files`);
+
     const zipName = sanitizeFilename(session.name || "playlist") + ".zip";
-    res.attachment(zipName);
+    const tmpPath = path.join(session.sessionDir, zipName);
 
     const archive = archiver("zip", { zlib: { level: 5 } });
-    archive.pipe(res);
+    const output = fs.createWriteStream(tmpPath);
+
+    archive.pipe(output);
+
+    archive.on('error', (err) => {
+        console.error('Zip archive error:', err);
+        output.close();
+    });
 
     for (const result of session.results) {
         if (fs.existsSync(result.path)) {
             archive.file(result.path, { name: result.filename });
+        } else {
+            console.log(`[ZIP] File not found, skipping: ${result.path}`);
         }
     }
 
     archive.finalize();
+
+    // Wait for archive to finish writing
+    await new Promise((resolve, reject) => {
+        output.on('close', resolve);
+        archive.on('error', reject);
+    });
+
+    console.log(`[ZIP] Archive created at ${tmpPath}, size: ${fs.statSync(tmpPath).size} bytes`);
+
+    // Set headers before download
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
+    res.setHeader('Content-Length', fs.statSync(tmpPath).size);
+
+    res.download(tmpPath, zipName, (err) => {
+        if (err) {
+            if (err.code !== 'ECONNABORTED') {
+                console.error('Download error:', err);
+            } else {
+                console.log('[ZIP] Client aborted download');
+            }
+        }
+        try { fs.unlinkSync(tmpPath); } catch {}
+    });
 });
 
 // Download individual file
